@@ -5,70 +5,59 @@ import os
 
 app = Flask(__name__)
 
-# 🔑 Aap ki ElevenLabs Key
-ELEVEN_API_KEY = "sk_377990659c6de5643f922fa60e3e3c0850e09c8d06ce1cfd"
+# 🔑 AAPKI PROVIDED COOKIE (Securely placed in Backend)
+COOKIE = "AEC=AVh_V2iyBHpOrwnn7CeXoAiedfWn9aarNoKT20Br2UX9Td9K-RAeS_o7Sg; HSID=Ao0szVfkYnMchTVfk; SSID=AGahZP8H4ni4UpnFV; APISID=SD-Q2DJLGdmZcxlA/AS8N0Gkp_b9sJC84f; SAPISID=9BY2tOwgEz4dK4dY/Acpw5_--fM7PV-aw4; __Secure-1PAPISID=9BY2tOwgEz4dK4dY/Acpw5_--fM7PV-aw4; __Secure-3PAPISID=9BY2tOwgEz4dK4dY/Acpw5_--fM7PV-aw4; SEARCH_SAMESITE=CgQI354B; SID=g.a0002wiVPDeqp9Z41WGZdsMDSNVWFaxa7cmenLYb7jwJzpe0kW3bZzx09pPfc201wUcRVKfh-wACgYKAXUSARMSFQHGX2MiU_dnPuMOs-717cJlLCeWOBoVAUF8yKpYTllPAbVgYQ0Mr_GyeXxV0076; __Secure-1PSID=g.a0002wiVPDeqp9Z41WGZdsMDSNVWFaxa7cmenLYb7jwJzpe0kW3b_Pt9L1eqcIAVeh7ZdRBOXgACgYKAYESARMSFQHGX2MicAK_Acu_-NCkzEz2wjCHmxoVAUF8yKp9xk8gQ82f-Ob76ysTXojB0076; __Secure-3PSID=g.a0002wiVPDeqp9Z41WGZdsMDSNVWFaxa7cmenLYb7jwJzpe0kW3bUudZTunPKtKbLRSoGKl1dAACgYKAYISARMSFQHGX2MimdzCEq63UmiyGU-3eyZx9RoVAUF8yKrc4ycLY7LGaJUyDXk_7u7M0076"
 
 @app.route('/')
 def home():
-    return "🦅 AHMAD RDX - Voice Engine Active!"
+    return "🦅 AHMAD RDX - NanoBanana Pro Logo API Active!"
 
 # ==========================================
-# 🎭 CLONE ENDPOINT
+# 🎨 ENGINE: LOGO PRO (GEMINI NANOBANANA)
 # ==========================================
-@app.route('/api/voice/clone', methods=['POST'])
-def clone_voice():
-    try:
-        data = request.json
-        audio_url = data.get('audio_url')
-        if not audio_url:
-            return jsonify({"status": False, "error": "Audio URL missing"}), 400
-
-        audio_resp = requests.get(audio_url)
-        audio_file = io.BytesIO(audio_resp.content)
-
-        url = "https://api.elevenlabs.io/v1/voices/add"
-        headers = {"xi-api-key": ELEVEN_API_KEY}
-        files = {
-            'files': ('sample.mp3', audio_file, 'audio/mpeg'),
-            'name': (None, "Cloned_Voice"),
-        }
-
-        resp = requests.post(url, headers=headers, files=files)
-        
-        # 🛡️ DEBUGGING: Agar error aaye toh ElevenLabs ka asli message dikhao
-        if resp.status_code != 200:
-            return jsonify({"status": False, "error": "ElevenLabs Rejected", "details": resp.json()}), resp.status_code
-
-        return jsonify({"status": True, "voice_id": resp.json()['voice_id']})
-
-    except Exception as e:
-        return jsonify({"status": False, "error": str(e)}), 500
-
-# ==========================================
-# 🎙️ SPEAK ENDPOINT
-# ==========================================
-@app.route('/api/voice/speak', methods=['GET'])
-def speak_voice():
+@app.route('/api/logo_pro', methods=['GET'])
+def generate_logo():
     try:
         text = request.args.get('text')
-        voice_id = request.args.get('voice_id')
-        if not text or not voice_id:
-            return jsonify({"status": False, "error": "Params missing"}), 400
+        style = request.args.get('style', 'modern').lower()
 
-        url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}"
-        headers = {"xi-api-key": ELEVEN_API_KEY, "Content-Type": "application/json"}
-        data = {"text": text, "model_id": "eleven_multilingual_v2"}
+        if not text:
+            return jsonify({"status": False, "error": "Brand name missing"}), 400
 
-        resp = requests.post(url, json=data, headers=headers)
+        # 🤫 HEAVY PROMPT ENGINEERING
+        # Hum Gemini ko bata rahe hain ke bacho wali pic nahi, professional logo chahiye.
+        prompts = {
+            'modern': f"Create a professional minimalist vector logo for the brand '{text}'. Clean geometric lines, corporate aesthetic, high-end design, white background, 4k.",
+            'esports': f"Create a fierce esports mascot logo for team '{text}'. Aggressive character design, neon glowing colors, bold gaming typography, shield background, ultra-detailed.",
+            'luxury': f"Create a luxury premium logo for '{text}'. Metallic gold embossed texture, elegant serif font, black leather background, sophisticated brand identity."
+        }
 
-        if resp.status_code == 200:
-            return send_file(io.BytesIO(resp.content), mimetype='audio/mpeg')
+        final_prompt = prompts.get(style, prompts['modern'])
+        
+        # NanoBanana API Call
+        # Note: Text-to-image ke liye imageUrl ko khali rakha hai ya prompt mein handle kiya hai
+        api_url = f"https://anabot.my.id/api/ai/geminiOption"
+        params = {
+            "prompt": final_prompt,
+            "type": "NanoBanana",
+            "cookie": COOKIE,
+            "apikey": "freeApikey"
+        }
+
+        resp = requests.get(api_url, params=params, timeout=60)
+        data = resp.json()
+
+        if data.get('success'):
+            result_url = data['data']['result']['url']
+            img_data = requests.get(result_url).content
+            return send_file(io.BytesIO(img_data), mimetype='image/png')
         else:
-            return jsonify({"status": False, "error": "Speak Fail", "details": resp.json()}), resp.status_code
+            return jsonify({"status": False, "error": data.get('error', 'API Failed'), "details": data}), 500
 
     except Exception as e:
         return jsonify({"status": False, "error": str(e)}), 500
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
     
