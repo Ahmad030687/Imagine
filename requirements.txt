@@ -3,3 +3,4 @@ requests
 Pillow
 gunicorn
 beautifulsoup4
+edge_tts
