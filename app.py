@@ -4,16 +4,12 @@ import io
 import os
 import random
 
-# App define karna sabse zaroori hai
 app = Flask(__name__)
 
 @app.route('/')
 def home():
-    return "🦅 AHMAD RDX - Akeli Imagine AI API Active!"
+    return "🦅 AHMAD RDX - Imagine Turbo API Active!"
 
-# ==========================================
-# 🎨 ONLY AI IMAGINE (FLUX MODEL)
-# ==========================================
 @app.route('/api/imagine', methods=['GET'])
 def ai_imagine():
     try:
@@ -21,17 +17,20 @@ def ai_imagine():
         if not prompt:
             return jsonify({"status": False, "error": "Prompt missing"}), 400
 
-        # Seed random rakha hai taake har baar alag result aaye
         seed = random.randint(1, 9999999)
         
-        # 2026 Flux Model (Best for Text and Details)
-        image_url = f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}?seed={seed}&width=1024&height=1024&model=flux&nologo=true"
+        # 🚀 Turbo Logic: Model ko 'flux-realism' ya 'flux' par rakha hai fast response ke liye
+        # Is URL mein 'width' aur 'height' thori kam ki hai taake AI foran image de sake
+        image_url = f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}?seed={seed}&width=720&height=720&model=flux&nologo=true"
         
-        # Image fetch karna
-        img_resp = requests.get(image_url, timeout=40)
-        
-        if img_resp.status_code != 200:
-            return jsonify({"status": False, "error": "AI Server didn't respond"}), 500
+        # ⏱️ Timeout 25 seconds rakha hai (Render ke 30 sec se pehle)
+        try:
+            img_resp = requests.get(image_url, timeout=25)
+            img_resp.raise_for_status()
+        except requests.exceptions.RequestException:
+            # Agar primary server busy ho toh Backup server (Same provider, different route)
+            backup_url = f"https://image.pollinations.ai/prompt/{prompt.replace(' ', '%20')}?seed={seed}&width=512&height=512&nologo=true"
+            img_resp = requests.get(backup_url, timeout=20)
 
         img_io = io.BytesIO(img_resp.content)
         img_io.seek(0)
@@ -39,10 +38,13 @@ def ai_imagine():
         return send_file(img_io, mimetype='image/jpeg')
 
     except Exception as e:
-        return jsonify({"status": False, "error": str(e)}), 500
+        # User ko professional message bhejain
+        return jsonify({
+            "status": False, 
+            "error": "AI Server is currently overloaded. Please try a simpler prompt or wait 10 seconds."
+        }), 500
 
 if __name__ == "__main__":
-    # Render ke liye port setup
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
     
